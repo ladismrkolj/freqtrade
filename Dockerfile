@@ -30,7 +30,6 @@ ENV LD_LIBRARY_PATH /usr/local/lib
 # Install dependencies
 COPY requirements.txt requirements-hyperopt.txt /freqtrade/
 RUN  pip install --user --no-cache-dir numpy \
-  && pip install --user --no-cache-dir -r requirements.txt
   && pip install --user --no-cache-dir -r requirements-hyperopt.txt
 
 # Copy dependencies to runtime-image
