@@ -1,4 +1,4 @@
-FROM python:3.9.1-slim-buster as base
+FROM --platform=linux/arm/v7 python:3.7.9-slim-buster as base
 
 # Setup env
 ENV LANG C.UTF-8
@@ -11,12 +11,16 @@ ENV PATH=/root/.local/bin:$PATH
 RUN mkdir /freqtrade
 WORKDIR /freqtrade
 
+RUN  apt-get update \
+  && apt-get -y install libatlas3-base curl sqlite3 \
+  && apt-get clean
+
 # Install dependencies
 FROM base as python-deps
-RUN apt-get update \
-    && apt-get -y install curl build-essential libssl-dev git \
-    && apt-get clean \
-    && pip install --upgrade pip
+RUN  apt-get -y install build-essential libssl-dev libffi-dev libgfortran5 \
+  && apt-get clean \
+  && pip install --upgrade pip \
+  && echo "[global]\nextra-index-url=https://www.piwheels.org/simple" > /etc/pip.conf
 
 # Install TA-lib
 COPY build_helpers/* /tmp/
@@ -26,6 +30,7 @@ ENV LD_LIBRARY_PATH /usr/local/lib
 # Install dependencies
 COPY requirements.txt requirements-hyperopt.txt /freqtrade/
 RUN  pip install --user --no-cache-dir numpy \
+  && pip install --user --no-cache-dir -r requirements.txt
   && pip install --user --no-cache-dir -r requirements-hyperopt.txt
 
 # Copy dependencies to runtime-image
@@ -35,12 +40,9 @@ ENV LD_LIBRARY_PATH /usr/local/lib
 
 COPY --from=python-deps /root/.local /root/.local
 
-
-
 # Install and execute
 COPY . /freqtrade/
-RUN pip install -e . --no-cache-dir \
-  && mkdir /freqtrade/user_data/
+RUN pip install -e . --no-cache-dir
 ENTRYPOINT ["freqtrade"]
 # Default to trade mode
 CMD [ "trade" ]
